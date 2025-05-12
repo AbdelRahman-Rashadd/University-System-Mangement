@@ -1,83 +1,94 @@
 
 import java.util.ArrayList;
-import java .util.List;
-
-public class Students extends User {
+import java.util.List;
+import java.util.Map;
+class Student extends User {
     private String studentId;
     private String admissionDate;
     private String academicStatus;
-    private List <String>enrolledCourses;
-    private Course course;
-    private Enrollment enrollment;
-    public Students(String userId, String username, String password, String name, String email, String contactInfo,String studentId,String admissionDate,String academicStatus,List<String>enrolledCourses,String grades,Course course,Enrollment enrollment) {
-        super(userId, username, password, name, email, contactInfo,false);
-        this.studentId=studentId;
-        this.academicStatus=academicStatus;
-        this.admissionDate=admissionDate;
-        this.enrolledCourses=new ArrayList<>();
-        this.course=course;
-        this.enrollment=enrollment;
-    }
-    public String getStudentId() {
-        return studentId;
+    private List<String> enrolledCourses;
+    private double gpa;
+
+    public Student(String id, String username, String password, String name, 
+String email, String phone, String studentId, String admissionDate) {
+        super(id, username, password, name, email, phone);
+        setStudentId(studentId);
+        setAdmissionDate(admissionDate);
+        this.academicStatus = "ACTIVE";
+        this.enrolledCourses = new ArrayList<>();
+        this.gpa = 0.0;
     }
 
-    public String getAdmissionDate() {
-        return admissionDate;
+    public String getStudentId() { return studentId; }
+    public void setStudentId(String studentId) {
+        if (studentId == null || !studentId.matches("^[A-Za-z]{2}\\d{6}$")) {
+            throw new IllegalArgumentException("Student ID must be in format AA123456");
+        }
+        this.studentId = studentId.toUpperCase();
     }
 
-    public String getAcademicStatus() {
-        return academicStatus;
+    public String getAdmissionDate() { return admissionDate; }
+    public void setAdmissionDate(String admissionDate) {
+        if (admissionDate == null || !admissionDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+            throw new IllegalArgumentException("Admission date must be in YYYY-MM-DD format");
+        }
+        this.admissionDate = admissionDate;
     }
 
+    public String getAcademicStatus() { return academicStatus; }
     public void setAcademicStatus(String academicStatus) {
+        List<String> validStatuses = List.of("ACTIVE", "PROBATION", "GRADUATED", "DROPPED");
+        if (!validStatuses.contains(academicStatus.toUpperCase())) {
+            throw new IllegalArgumentException("Invalid academic status");
+        }
         this.academicStatus = academicStatus;
     }
 
-    public List<String> getEnrolledCourses() {
-        return enrolledCourses;
-    }
-    public boolean registerForCourse(Course course,String courseId){
-        if(!course.isPrerequisiteSatisfied()||enrolledCourses.contains(courseId)){
-            System.out.println("Course registeration faild");
-            return false;
+    public List<String> getEnrolledCourses() { return new ArrayList<>(enrolledCourses); }
+    public double getGpa() { return gpa; }
+
+    private void setGpa(double gpa) {
+        if (gpa < 0 || gpa > 4.0) {
+            throw new IllegalArgumentException("GPA must be between 0.0 and 4.0");
         }
-        else{
+        this.gpa = Math.round(gpa * 100) / 100.0;
+    }
+
+    public boolean enrollCourse(String courseId) {
+        if (courseId == null || courseId.trim().isEmpty()) return false;
+        if (enrolledCourses.size() >= 6) {
+            throw new IllegalStateException("Maximum course load reached (6 courses)");
+        }
+        if (!enrolledCourses.contains(courseId)) {
             enrolledCourses.add(courseId);
-            System.out.println("course: " +course.getTitle()+ " registered");
             return true;
         }
+        return false;
     }
-    public void dropCourse(String courseId) {
-        this.enrolledCourses.remove(courseId);
-        System.out.println("Dropped course: " + courseId);
+
+    public boolean dropCourse(String courseId) {
+        if (enrolledCourses.contains(courseId)) {
+            enrolledCourses.remove(courseId);
+            return true;
+        }
+        return false;
     }
-    @Override
-    public String getRole(){
-        return "student";
-    }
-    public double calculateGPA(){
-        double totalPoints=0.0;
-        int totalCreditHours=0;
-        for(int i=0;i<enrolledCourses.size();i++){
-            String courseId=enrolledCourses.get(i);
-            if(enrolledCourses.contains(courseId)){
-                totalPoints+=enrollment.getGradePoints();
-                totalCreditHours+=course.getCreditHours();
+
+    public void calculateGpa(Map <String, Double> courseGrades) {
+        if (courseGrades == null || courseGrades.isEmpty()) {
+            this.gpa = 0.0;
+            return;
+        }
+        double totalPoints = 0.0;
+        int totalCredits = 0;
+        for (String courseId : enrolledCourses) {
+            if (courseGrades.containsKey(courseId)) {
+                totalPoints += courseGrades.get(courseId);
+                totalCredits += 3;
             }
         }
-        return totalPoints/totalCreditHours;
+        setGpa(totalCredits > 0 ? (totalPoints / totalCredits)  : 0.0);
     }
 
-    @Override
-    public void displayDashboard() {
-        System.out.println("\n---- Student Dashboard ----");
-        System.out.println("Student ID: " + studentId);
-        System.out.println("Name: " + getName());
-        System.out.println("Academic Status: " + academicStatus);
-        System.out.println("Enrolled Courses: " + enrolledCourses);
-        System.out.println("-------------------------\n");
-    }
-
-    
-    }
+    public String getRole() { return "STUDENT"; }
+}
